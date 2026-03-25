@@ -78,7 +78,6 @@ The framework follows **Page Object Model (POM)** with clear separation of conce
 
 ## 🔧 Step 1: Clone Repository
 
-```bash
 git clone https://github.com/<your-username>/<repo>.git
 cd <repo>
 
