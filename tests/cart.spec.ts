@@ -51,7 +51,6 @@ test.describe('Shopping Cart', () => {
 
     await i.cart();
 
-    // Remove first item
     await c.removeFirstItem();
     const items = c.items();
     await expect(items).toHaveCount(1);

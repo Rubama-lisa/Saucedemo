@@ -16,10 +16,8 @@ test.describe('Performance & Resilience', () => {
     // Login with slow user
     await l.login(users.performance.username, users.performance.password);
 
-    // Smart wait: wait for inventory page instead of sleep
+    //wait for inventory page instead of sleep
     await expect(page).toHaveURL(/inventory/);
-
-    // Extra validation: products loaded
     await expect(i.items()).toHaveCount(6);
   });
 
@@ -30,17 +28,15 @@ test.describe('Performance & Resilience', () => {
     await l.goto();
     await l.login(users.error.username, users.error.password);
 
-    // Add item
     await i.add(0);
 
     // Verify cart badge updated
     const badge = page.locator('.shopping_cart_badge');
     await expect(badge).toHaveText('1');
 
-    // Click remove (same button toggles)
     await i.add(0); // clicking again should act as "Remove"
 
-    // ❌ Expected bug: item is NOT removed
+    // Expected bug: item is NOT removed
     await expect(badge).toHaveText('0');
   });
 
@@ -67,13 +63,12 @@ test.describe('Performance & Resilience', () => {
     // Ensure we are on step 2
     await expect(page).toHaveURL(/checkout-step-two/);
 
-    // Try to finish order
+    // Finish order
     await co.finish();
 
-    // ❌ Expected bug: still on step 2 (no navigation)
+    // Expected bug: still on step 2
     await expect(page).toHaveURL(/checkout-complete/);
 
-    // ❌ Confirmation message should NOT appear
     const confirmation = page.locator('.complete-header');
     await expect(confirmation).toBeVisible();
   });
@@ -90,15 +85,12 @@ test.describe('Performance & Resilience', () => {
     await i.cart();
     await c.checkout();
 
-    // Fill form
     await page.fill('#first-name', 'John');
-    await page.fill('#last-name', 'Doe'); // ❌ supposed to fail
+    await page.fill('#last-name', 'Doe'); // supposed to fail
     await page.fill('#postal-code', '12345');
 
     // Validate input did NOT register
     const lastNameValue = await page.inputValue('#last-name');
-    expect(lastNameValue).not.toBe(''); // ❌ field remains empty
+    expect(lastNameValue).not.toBe(''); // field remains empty
   });
-
-
 });

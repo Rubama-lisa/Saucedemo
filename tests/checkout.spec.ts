@@ -39,7 +39,7 @@ test.describe('Checkout Flow', () => {
     await i.cart();
     await c.checkout();
 
-    // Try to continue without filling form
+    // Continue without filling form
     await page.click('#continue');
 
     const error = page.locator('[data-test="error"]');
@@ -97,5 +97,4 @@ test.describe('Checkout Flow', () => {
     await expect(confirmationHeader).toHaveText('Thank you for your order!');
     await expect(confirmationText).toBeVisible();
   });
-
 });

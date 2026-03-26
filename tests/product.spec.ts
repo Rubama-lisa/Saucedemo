@@ -6,110 +6,113 @@ import { parsePrice } from '../utils/helpers';
 import { verifySortedAscending } from '../utils/assertions';
 import users from '../fixtures/users.json';
 
-test('product listing loads correctly', async ({ page }) => {
-  const l = new LoginPage(page);
-  const i = new InventoryPage(page);
+test.describe('Product Catalog', () => {
 
-  await l.goto();
-  await l.login(users.standard.username, users.standard.password);
+  test('product listing loads correctly', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  const items = i.items();
-  await expect(items).toHaveCount(6);
+    await l.goto();
+    await l.login(users.standard.username, users.standard.password);
 
-  const names = await page.locator('.inventory_item_name').allTextContents();
-  const prices = await i.prices().allTextContents();
+    const items = i.items();
+    await expect(items).toHaveCount(6);
 
-  expect(names.length).toBe(6);
-  expect(prices.length).toBe(6);
+    const names = await page.locator('.inventory_item_name').allTextContents();
+    const prices = await i.prices().allTextContents();
 
-  names.forEach(name => expect(name.trim().length).toBeGreaterThan(0));
-  prices.map(parsePrice).forEach(price => expect(price).toBeGreaterThan(0));
-});
+    expect(names.length).toBe(6);
+    expect(prices.length).toBe(6);
 
-test('name sorting A to Z', async ({ page }) => {
-  const l = new LoginPage(page);
-  const i = new InventoryPage(page);
+    names.forEach(name => expect(name.trim().length).toBeGreaterThan(0));
+    prices.map(parsePrice).forEach(price => expect(price).toBeGreaterThan(0));
+  });
 
-  await l.goto();
-  await l.login(users.standard.username, users.standard.password);
+  test('name sorting A to Z', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  await i.sort('az');
+    await l.goto();
+    await l.login(users.standard.username, users.standard.password);
 
-  const names = await page.locator('.inventory_item_name').allTextContents();
-  const sorted = [...names].sort((a, b) => a.localeCompare(b));
+    await i.sort('az');
 
-  expect(names).toEqual(sorted);
-});
+    const names = await page.locator('.inventory_item_name').allTextContents();
+    const sorted = [...names].sort((a, b) => a.localeCompare(b));
 
-test('name sorting Z to A', async ({ page }) => {
-  const l = new LoginPage(page);
-  const i = new InventoryPage(page);
+    expect(names).toEqual(sorted);
+  });
 
-  await l.goto();
-  await l.login(users.standard.username, users.standard.password);
+  test('name sorting Z to A', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  await i.sort('za');
+    await l.goto();
+    await l.login(users.standard.username, users.standard.password);
 
-  const names = await page.locator('.inventory_item_name').allTextContents();
-  const sorted = [...names].sort((a, b) => b.localeCompare(a));
+    await i.sort('za');
 
-  expect(names).toEqual(sorted);
-});
+    const names = await page.locator('.inventory_item_name').allTextContents();
+    const sorted = [...names].sort((a, b) => b.localeCompare(a));
 
-test('price sorting validation', async ({page})=>{
-  const l=new LoginPage(page);
-  const i=new InventoryPage(page);
+    expect(names).toEqual(sorted);
+  });
 
-  await l.goto();
-  await l.login(users.standard.username, users.standard.password);
+  test('price sorting validation', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  await i.sort('lohi');
-  const prices = await i.prices().allTextContents();
-  const nums = prices.map(parsePrice);
+    await l.goto();
+    await l.login(users.standard.username, users.standard.password);
 
-  verifySortedAscending(nums);
-});
+    await i.sort('lohi');
+    const prices = await i.prices().allTextContents();
+    const nums = prices.map(parsePrice);
 
-test('price sorting high to low', async ({ page }) => {
-  const l = new LoginPage(page);
-  const i = new InventoryPage(page);
+    verifySortedAscending(nums);
+  });
 
-  await l.goto();
-  await l.login(users.standard.username, users.standard.password);
+  test('price sorting high to low', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  await i.sort('hilo');
+    await l.goto();
+    await l.login(users.standard.username, users.standard.password);
 
-  const prices = await i.prices().allTextContents();
-  const nums = prices.map(parsePrice);
+    await i.sort('hilo');
 
-  const sorted = [...nums].sort((a, b) => b - a);
+    const prices = await i.prices().allTextContents();
+    const nums = prices.map(parsePrice);
 
-  expect(nums).toEqual(sorted);
-});
+    const sorted = [...nums].sort((a, b) => b - a);
 
-test('problem_user image should match product', async ({ page }) => {
-  const l = new LoginPage(page);
-  const i = new InventoryPage(page);
+    expect(nums).toEqual(sorted);
+  });
 
-  await l.goto();
-  await l.login(users.problem.username, users.problem.password);
+  test('problem_user image should match product', async ({ page }) => {
+    const l = new LoginPage(page);
+    const i = new InventoryPage(page);
 
-  const items = await page.locator('.inventory_item').all();
+    await l.goto();
+    await l.login(users.problem.username, users.problem.password);
 
-  const srcList: string[] = [];
+    const items = await page.locator('.inventory_item').all();
 
-  for (const item of items) {
-    const name = await item.locator('.inventory_item_name').textContent();
-    const imgSrc = await item.locator('img').getAttribute('src');
+    const srcList: string[] = [];
 
-    expect(name).toBeTruthy();
-    expect(imgSrc).toBeTruthy();
+    for (const item of items) {
+      const name = await item.locator('.inventory_item_name').textContent();
+      const imgSrc = await item.locator('img').getAttribute('src');
 
-    srcList.push(imgSrc!);
-  }
+      expect(name).toBeTruthy();
+      expect(imgSrc).toBeTruthy();
 
-  const uniqueImages = new Set(srcList);
+      srcList.push(imgSrc!);
+    }
 
-  // If all images same → bug
-  expect(uniqueImages.size).toBeGreaterThan(1);
+    const uniqueImages = new Set(srcList);
+
+    // If all images same → bug
+    expect(uniqueImages.size).toBeGreaterThan(1);
+  });
 });
