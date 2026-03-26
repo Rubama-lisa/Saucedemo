@@ -1,13 +1,23 @@
 
 import { Page } from '@playwright/test';
+import { BasePage } from './Basepage';
+import { BaseLocators } from '../locators/Baselocators';
 
-export class LoginPage {
-  constructor(private page: Page) {}
-  async goto(){ await this.page.goto('/'); }
-  async login(u:string,p:string){
-    await this.page.fill('#user-name',u);
-    await this.page.fill('#password',p);
-    await this.page.click('#login-button');
+export class LoginPage extends BasePage {
+  private base: BaseLocators;
+
+  constructor(page: Page) {
+    super(page);
+    this.base = new BaseLocators(page);
   }
-  async error(){ return this.page.locator('[data-test="error"]').textContent(); }
+
+  async login(username: string, password: string) {
+    await this.enterText(this.page.locator('#user-name'), username);
+    await this.enterText(this.page.locator('#password'), password);
+    await this.click(this.base.getButtonByText('Login'));
+  }
+
+  async getError() {
+    return await this.getText(this.base.errorMessage);
+  }
 }

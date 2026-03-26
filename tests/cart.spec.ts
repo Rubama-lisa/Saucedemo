@@ -2,18 +2,19 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { InventoryPage } from '../pages/InventoryPage';
 import { CartPage } from '../pages/CartPage';
+import { BaseLocators } from '../locators/Baselocators';
 import users from '../fixtures/users.json';
 
 test.describe('Shopping Cart', () => {
 
   test('add single item and verify cart badge updates', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
+    await inventory.addItem(0); // add first item
 
     const badge = page.locator('.shopping_cart_badge');
     await expect(badge).toBeVisible();
@@ -21,38 +22,33 @@ test.describe('Shopping Cart', () => {
   });
 
   test('add multiple items and verify all appear in cart', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.add(1);
-    await i.add(2);
+    await inventory.addItems([0, 1, 2]); // add multiple items
+    await inventory.goToCart(); // navigate to cart page
 
-    await i.cart();
-
-    const items = c.items();
+    const items = cart.items();
     await expect(items).toHaveCount(3);
   });
 
   test('remove item from cart and verify cart updates', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.add(1);
+    await inventory.addItems([0, 1]); // add two items
+    await inventory.goToCart(); // go to cart page
 
-    await i.cart();
-
-    await c.removeFirstItem();
-    const items = c.items();
+    await cart.removeFirstItem(); // remove first item
+    const items = cart.items();
     await expect(items).toHaveCount(1);
   });
 });

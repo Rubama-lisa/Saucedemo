@@ -1,11 +1,28 @@
+import { Page, Locator } from '@playwright/test';
+import { BasePage } from './Basepage';
+import { BaseLocators } from '../locators/Baselocators';
 
-import { Page } from '@playwright/test';
+export class CartPage extends BasePage {
 
-export class CartPage {
-  constructor(private page: Page) {}
-  items(){ return this.page.locator('.cart_item'); }
-  async checkout(){ await this.page.click('#checkout'); }
+  private base: BaseLocators;
+
+  constructor(page: Page) {
+    super(page);
+    this.base = new BaseLocators(page);
+  }
+
+  // Get all cart items
+  items(): Locator {
+    return this.base.cartItems;
+  }
+
+  // Checkout
+  async checkout() {
+    await this.click(this.base.checkoutButton);
+  }
+
+  // Remove first item
   async removeFirstItem() {
-  await this.page.locator('.cart_button').first().click();
-}
+    await this.click(this.base.removeButtons.first());
+  }
 }

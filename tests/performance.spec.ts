@@ -8,89 +8,89 @@ import users from '../fixtures/users.json';
 test.describe('Performance & Resilience', () => {
 
   test('performance_glitch_user login succeeds despite delay', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
+    await login.goto();
 
     // Login with slow user
-    await l.login(users.performance.username, users.performance.password);
+    await login.login(users.performance.username, users.performance.password);
 
-    //wait for inventory page instead of sleep
+    // Wait for inventory page to load instead of sleep
     await expect(page).toHaveURL(/inventory/);
-    await expect(i.items()).toHaveCount(6);
+    await expect(inventory.items()).toHaveCount(6);
   });
 
   test('remove from cart does not work for error_user', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.error.username, users.error.password);
+    await login.goto();
+    await login.login(users.error.username, users.error.password);
 
-    await i.add(0);
+    // Add first item
+    await inventory.addItem(0);
 
     // Verify cart badge updated
     const badge = page.locator('.shopping_cart_badge');
     await expect(badge).toHaveText('1');
 
-    await i.add(0); // clicking again should act as "Remove"
+    // Click again (expected bug: remove does not work)
+    await inventory.addItem(0);
 
-    // Expected bug: item is NOT removed
+    // Expected failure: badge should be 0, but it stays 1
     await expect(badge).toHaveText('0');
   });
 
   test('checkout button does not navigate for error_user', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
-    const co = new CheckoutPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.error.username, users.error.password);
+    await login.goto();
+    await login.login(users.error.username, users.error.password);
 
-    await i.add(0);
-    await i.cart();
-    await c.checkout();
+    await inventory.addItem(0);
+    await inventory.goToCart();
+
+    // Step 1: Checkout
+    await cart.checkout();
 
     // Fill checkout step 1
-    await page.fill('#first-name', 'John');
-    await page.fill('#last-name', 'Doe');
-    await page.fill('#postal-code', '12345');
+    await checkout.fill('John', 'Doe', '12345');
 
-    await page.click('#continue');
-
-    // Ensure we are on step 2
-    await expect(page).toHaveURL(/checkout-step-two/);
+    // Ensure step 2 URL
+    await checkout.waitForURL(/checkout-step-two/);
 
     // Finish order
-    await co.finish();
+    await checkout.finish();
 
     // Expected bug: still on step 2
-    await expect(page).toHaveURL(/checkout-complete/);
+    await checkout.waitForURL(/checkout-complete/);
 
-    const confirmation = page.locator('.complete-header');
-    await expect(confirmation).toBeVisible();
+    const confirmation = checkout.confirm();
+    await checkout.confirm();
   });
 
   test('last name field does not work in checkout for error_user', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.error.username, users.error.password);
+    await login.goto();
+    await login.login(users.error.username, users.error.password);
 
-    await i.add(0);
-    await i.cart();
-    await c.checkout();
+    await inventory.addItem(0);
+    await inventory.goToCart();
+    await cart.checkout();
 
-    await page.fill('#first-name', 'John');
-    await page.fill('#last-name', 'Doe'); // supposed to fail
-    await page.fill('#postal-code', '12345');
+   // Fill checkout step 1
+    await checkout.fill('John', 'Doe', '12345');
 
-    // Validate input did NOT register
-    const lastNameValue = await page.inputValue('#last-name');
-    expect(lastNameValue).not.toBe(''); // field remains empty
+    // Validate last name did NOT register (error user bug)
+    const lastNameValue = await checkout.lastName.inputValue();
+    expect(lastNameValue).toBe(''); // field remains empty
   });
 });

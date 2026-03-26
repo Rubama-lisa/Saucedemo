@@ -4,22 +4,24 @@ import { LoginPage } from '../pages/LoginPage';
 import { InventoryPage } from '../pages/InventoryPage';
 import { parsePrice } from '../utils/helpers';
 import { verifySortedAscending } from '../utils/assertions';
+import { BaseLocators } from '../locators/Baselocators';
 import users from '../fixtures/users.json';
 
 test.describe('Product Catalog', () => {
 
   test('product listing loads correctly', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const locators = new BaseLocators(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    const items = i.items();
+    const items = inventory.items();
     await expect(items).toHaveCount(6);
 
     const names = await page.locator('.inventory_item_name').allTextContents();
-    const prices = await i.prices().allTextContents();
+    const prices = await inventory.prices().allTextContents();
 
     expect(names.length).toBe(6);
     expect(prices.length).toBe(6);
@@ -29,13 +31,13 @@ test.describe('Product Catalog', () => {
   });
 
   test('name sorting A to Z', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.sort('az');
+    await inventory.sort('az');
 
     const names = await page.locator('.inventory_item_name').allTextContents();
     const sorted = [...names].sort((a, b) => a.localeCompare(b));
@@ -44,13 +46,13 @@ test.describe('Product Catalog', () => {
   });
 
   test('name sorting Z to A', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.sort('za');
+    await inventory.sort('za');
 
     const names = await page.locator('.inventory_item_name').allTextContents();
     const sorted = [...names].sort((a, b) => b.localeCompare(a));
@@ -58,45 +60,45 @@ test.describe('Product Catalog', () => {
     expect(names).toEqual(sorted);
   });
 
-  test('price sorting validation', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+  test('price sorting low to high', async ({ page }) => {
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.sort('lohi');
-    const prices = await i.prices().allTextContents();
+    await inventory.sort('lohi');
+
+    const prices = await inventory.prices().allTextContents();
     const nums = prices.map(parsePrice);
 
     verifySortedAscending(nums);
   });
 
   test('price sorting high to low', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.sort('hilo');
+    await inventory.sort('hilo');
 
-    const prices = await i.prices().allTextContents();
+    const prices = await inventory.prices().allTextContents();
     const nums = prices.map(parsePrice);
 
     const sorted = [...nums].sort((a, b) => b - a);
-
     expect(nums).toEqual(sorted);
   });
 
   test('problem_user image should match product', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
 
-    await l.goto();
-    await l.login(users.problem.username, users.problem.password);
+    await login.goto();
+    await login.login(users.problem.username, users.problem.password);
 
-    const items = await page.locator('.inventory_item').all();
+    const items = await inventory.items().all();
 
     const srcList: string[] = [];
 

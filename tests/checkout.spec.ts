@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Locator } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { InventoryPage } from '../pages/InventoryPage';
 import { CartPage } from '../pages/CartPage';
@@ -9,92 +9,100 @@ import { parsePrice } from '../utils/helpers';
 test.describe('Checkout Flow', () => {
 
   test('complete full purchase with valid details', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
-    const co = new CheckoutPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.cart();
-    await c.checkout();
+    // Add item and go to cart
+    await inventory.addItem(0);
+    await inventory.goToCart();
 
-    await co.fill('John', 'Doe', '12345');
-    await co.finish();
+    // Checkout step 1
+    await cart.checkout();
+    await checkout.fill('John', 'Doe', '12345');
 
-    await expect(co.confirm()).toContainText('Thank you');
+    // Checkout step 2 - finish
+    await checkout.finish();
+
+    // Assert confirmation
+    const confirmation: Locator = checkout.confirm();
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation).toHaveText(/THANK YOU FOR YOUR ORDER/i);
   });
 
   test('checkout blocked when required fields are missing', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.cart();
-    await c.checkout();
+    await inventory.addItem(0);
+    await inventory.goToCart();
+    await cart.checkout();
 
-    // Continue without filling form
-    await page.click('#continue');
+    // Missing last name
+    await checkout.fill('John', '', '12345');
 
-    const error = page.locator('[data-test="error"]');
-    await expect(error).toBeVisible();
+    // Assert error appears
+    const lastNameError: Locator = page.locator('[data-test="error"]');
+    await expect(lastNameError).toBeVisible();
+    await expect(lastNameError).toHaveText(/last name is required/i);
   });
 
-  test('verify order summary calculation is correct', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
-    const co = new CheckoutPage(page);
+  test('verify order summary is mathematically correct', async ({ page }) => {
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.add(1);
+    // Add multiple items and go to cart
+    await inventory.addItems([0, 1]);
+    await inventory.goToCart();
+    await cart.checkout();
+    await checkout.fill('John', 'Doe', '12345');
 
-    await i.cart();
-    await c.checkout();
+    // Assert totals
+    const itemPricesText = await inventory.prices().allTextContents();
+    const itemPrices = itemPricesText.map(p => parseFloat(p.replace('$', '')));
+    const expectedItemTotal = itemPrices.reduce((a, b) => a + b, 0);
 
-    await co.fill('John', 'Doe', '12345');
-
-    // Get item total
     const itemTotalText = await page.locator('.summary_subtotal_label').textContent();
     const taxText = await page.locator('.summary_tax_label').textContent();
     const totalText = await page.locator('.summary_total_label').textContent();
 
-    const itemTotal = parsePrice(itemTotalText!.split('$')[1]);
-    const tax = parsePrice(taxText!.split('$')[1]);
-    const total = parsePrice(totalText!.split('$')[1]);
+    const tax = parseFloat((taxText || '').replace('Tax: $', ''));
+    const total = parseFloat((totalText || '').replace('Total: $', ''));
 
-    expect(total).toBeCloseTo(itemTotal + tax, 2);
+    await expect(expectedItemTotal + tax).toBeCloseTo(total, 2);
   });
 
-  test('verify confirmation screen after successful order', async ({ page }) => {
-    const l = new LoginPage(page);
-    const i = new InventoryPage(page);
-    const c = new CartPage(page);
-    const co = new CheckoutPage(page);
+  test('verify confirmation screen content after successful order', async ({ page }) => {
+    const login = new LoginPage(page);
+    const inventory = new InventoryPage(page);
+    const cart = new CartPage(page);
+    const checkout = new CheckoutPage(page);
 
-    await l.goto();
-    await l.login(users.standard.username, users.standard.password);
+    await login.goto();
+    await login.login(users.standard.username, users.standard.password);
 
-    await i.add(0);
-    await i.cart();
-    await c.checkout();
+    await inventory.addItem(0);
+    await inventory.goToCart();
+    await cart.checkout();
+    await checkout.fill('John', 'Doe', '12345');
+    await checkout.finish();
 
-    await co.fill('John', 'Doe', '12345');
-    await co.finish();
-
-    const confirmationHeader = page.locator('.complete-header');
-    const confirmationText = page.locator('.complete-text');
-
-    await expect(confirmationHeader).toHaveText('Thank you for your order!');
-    await expect(confirmationText).toBeVisible();
+    const confirmation: Locator = checkout.confirm();
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation).toHaveText(/THANK YOU FOR YOUR ORDER/i);
   });
 });
